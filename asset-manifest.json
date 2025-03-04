@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/juvelyrikos-is/static/css/main.054232fe.css",
+    "main.js": "/juvelyrikos-is/static/js/main.44a08637.js",
+    "static/js/453.520e1735.chunk.js": "/juvelyrikos-is/static/js/453.520e1735.chunk.js",
+    "index.html": "/juvelyrikos-is/index.html",
+    "main.054232fe.css.map": "/juvelyrikos-is/static/css/main.054232fe.css.map",
+    "main.44a08637.js.map": "/juvelyrikos-is/static/js/main.44a08637.js.map",
+    "453.520e1735.chunk.js.map": "/juvelyrikos-is/static/js/453.520e1735.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.054232fe.css",
+    "static/js/main.44a08637.js"
+  ]
+}

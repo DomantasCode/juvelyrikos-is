@@ -61,11 +61,13 @@ const mockCatalog = [
 
 // Main App Component
 const JewelryWorkshopApp = () => {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [activeTab, setActiveTab] = useState('dashboard');
     const [orders, setOrders] = useState(mockOrders);
     const [customers, setCustomers] = useState(mockCustomers);
     const [inventory, setInventory] = useState(mockInventory);
     const [catalog, setCatalog] = useState(mockCatalog);
+    const [loginError, setLoginError] = useState('');
 
     // Modal states
     const [showNewOrderModal, setShowNewOrderModal] = useState(false);
@@ -86,6 +88,29 @@ const JewelryWorkshopApp = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [showCustomizeModal, setShowCustomizeModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+
+    // Handle login
+    const handleLogin = (formElements) => {
+        // Get values directly from form elements
+        const username = formElements.username.value.trim();
+        const password = formElements.password.value;
+
+        // Allow any login with non-empty username and password
+        if (username && password) {
+            setIsLoggedIn(true);
+            setLoginError('');
+        } else {
+            setLoginError('Neteisingas prisijungimo vardas arba slaptažodis!');
+        }
+    };
+
+    // Handle logout
+    const handleLogout = () => {
+        if (window.confirm('Ar tikrai norite atsijungti?')) {
+            setIsLoggedIn(false);
+            setActiveTab('dashboard');
+        }
+    };
 
     // Order Modal handlers
     const handleNewOrder = () => {
@@ -267,7 +292,7 @@ const JewelryWorkshopApp = () => {
                     onCustomize={handleCustomize}
                 />;
             case 'production':
-                return <Production />;
+                return <Production orders={orders} setOrders={setOrders} />;
             case 'payments':
                 return <Payments />;
             case 'feedback':
@@ -276,6 +301,64 @@ const JewelryWorkshopApp = () => {
                 return <Dashboard inventory={inventory} orders={orders} onOrderItem={handleQuickOrder} />;
         }
     };
+
+    // If not logged in, show login screen
+    if (!isLoggedIn) {
+        return (
+            <div className="app-container" style={{ justifyContent: 'center', alignItems: 'center', background: '#f3f4f6' }}>
+                <div style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
+                    <div className="card">
+                        <div className="card-header" style={{ textAlign: 'center', borderBottomWidth: '2px' }}>
+                            <h2 className="card-title" style={{ fontSize: '1.5rem', fontWeight: '600' }}>
+                                Juvelyrinių dirbinių valdymo sistema
+                            </h2>
+                        </div>
+                        <div className="card-body">
+                            <form onSubmit={(e) => { e.preventDefault(); handleLogin(e.target.elements); }}>
+                                <div className="form-group">
+                                    <label className="form-label" htmlFor="username">Vartotojo vardas</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        id="username"
+                                        name="username"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label" htmlFor="password">Slaptažodis</label>
+                                    <input
+                                        type="password"
+                                        className="form-control"
+                                        id="password"
+                                        name="password"
+                                        required
+                                    />
+                                </div>
+
+                                {loginError && (
+                                    <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                                        {loginError}
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+                                        Prisijungti
+                                    </button>
+                                </div>
+
+                                <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.8rem', color: '#6b7280' }}>
+                                    <p>Demo prisijungimo duomenys: admin / admin</p>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="app-container">
@@ -295,7 +378,7 @@ const JewelryWorkshopApp = () => {
                     <SidebarItem icon={<DollarSign />} label="Mokėjimai" active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} />
                     <SidebarItem icon={<MessageSquare />} label="Atsiliepimai" active={activeTab === 'feedback'} onClick={() => setActiveTab('feedback')} />
                     <div className="sidebar-footer">
-                        <SidebarItem icon={<LogOut />} label="Atsijungti" onClick={() => setShowLoginModal(true)} />
+                        <SidebarItem icon={<LogOut />} label="Atsijungti" onClick={handleLogout} />
                     </div>
                 </nav>
             </div>
@@ -750,114 +833,273 @@ const Catalog = ({ catalog, onAddProduct, onViewImage, onCustomize }) => {
         </div>
     );
 };
-// Production Component
-const Production = () => {
+
+// Updated Production Component
+const Production = ({ orders, setOrders }) => {
+    // Mock data for production orders and craftsmen
+    const [productionOrders, setProductionOrders] = useState([
+        { id: 'UŽS-001', item: 'Auksinis žiedas', customer: 'Domantas Moisejevas', startDate: '2025-03-05', deadline: '2025-03-15', status: 'Vykdomas', assignedTo: 'Petras Jonaitis' },
+        { id: 'UŽS-004', item: 'Apyrankės graviravimas', customer: 'Edvardas Tamulevičius', startDate: '2025-03-08', deadline: '2025-03-10', status: 'Vykdomas', assignedTo: 'Marius Petraitis' },
+        { id: 'UŽS-003', item: 'Deimantiniai auskarai', customer: 'Matas Kubilius', startDate: '', deadline: '2025-03-30', status: 'Laukiama', assignedTo: '' }
+    ]);
+
+    const craftsmen = [
+        { id: 1, name: 'Petras Jonaitis', specialization: 'Žiedai, apyrankės' },
+        { id: 2, name: 'Marius Petraitis', specialization: 'Graviravimas, apdirbimas' },
+        { id: 3, name: 'Jonas Kazlauskas', specialization: 'Vėriniai, auskarai' },
+        { id: 4, name: 'Ieva Petraitė', specialization: 'Taisymas, restauravimas' }
+    ];
+
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Handle craftsman assignment
+    const handleAssignCraftsman = (order) => {
+        setSelectedOrder(order);
+        setShowAssignModal(true);
+    };
+
+    // Update order with assigned craftsman
+    const handleAssignSubmit = (orderId, craftsmanName, startDate) => {
+        setProductionOrders(productionOrders.map(order => {
+            if (order.id === orderId) {
+                return {
+                    ...order,
+                    assignedTo: craftsmanName,
+                    startDate: startDate,
+                    status: 'Vykdomas'
+                };
+            }
+            return order;
+        }));
+
+        // Also update main orders state if the order exists there
+        if (orders && setOrders) {
+            setOrders(orders.map(order => {
+                if (order.id === orderId) {
+                    return {
+                        ...order,
+                        status: 'Vykdomas'
+                    };
+                }
+                return order;
+            }));
+        }
+
+        setShowAssignModal(false);
+    };
+
+    // Filter orders based on search
+    const filteredOrders = productionOrders.filter(order =>
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.assignedTo && order.assignedTo.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    // Calculate days remaining
+    const calculateDaysRemaining = (deadline) => {
+        if (!deadline) return "Nėra termino";
+        const today = new Date();
+        const deadlineDate = new Date(deadline);
+        const timeDiff = deadlineDate - today;
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        if (daysDiff < 0) return "Vėluoja";
+        if (daysDiff === 0) return "Šiandien";
+        return `${daysDiff} d.`;
+    };
+
     return (
         <div>
-            <div className="dashboard-grid">
-                <div className="dashboard-grid-col-2">
-                    <Card title="Gamybos tvarkaraštis">
-                        <div className="table-container">
-                            <table>
-                                <thead>
-                                <tr>
-                                    <th>Užsakymo ID</th>
-                                    <th>Prekė</th>
-                                    <th>Meistras</th>
-                                    <th>Pradžios data</th>
-                                    <th>Terminas</th>
-                                    <th>Būsena</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td className="table-text-regular">UŽS-001</td>
-                                    <td className="table-text-medium">Auksinis žiedas</td>
-                                    <td className="table-text-regular">Petras Jonaitis</td>
-                                    <td className="table-text-regular">2025-03-05</td>
-                                    <td className="table-text-regular">2025-03-15</td>
-                                    <td>
-                                        <StatusBadge status="Vykdomas" />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-text-regular">UŽS-004</td>
-                                    <td className="table-text-medium">Apyrankės graviravimas</td>
-                                    <td className="table-text-regular">Marius Petraitis</td>
-                                    <td className="table-text-regular">2025-03-08</td>
-                                    <td className="table-text-regular">2025-03-10</td>
-                                    <td>
-                                        <StatusBadge status="Vykdomas" />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-text-regular">UŽS-003</td>
-                                    <td className="table-text-medium">Deimantiniai auskarai</td>
-                                    <td className="table-text-regular">Nepriskirta</td>
-                                    <td className="table-text-regular">-</td>
-                                    <td className="table-text-regular">2025-03-30</td>
-                                    <td>
-                                        <StatusBadge status="Laukiama" />
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
-                </div>
-
-                <div>
-                    <Card title="Meistrų apkrova">
-                        <div>
-                            <div className="progress-container">
-                                <div className="progress-header">
-                                    <span className="progress-label">Petras Jonaitis</span>
-                                    <span className="progress-value">3 užsakymai</span>
-                                </div>
-                                <div className="progress-bar-bg">
-                                    <div className="progress-bar green" style={{ width: '75%' }}></div>
-                                </div>
-                            </div>
-
-                            <div className="progress-container">
-                                <div className="progress-header">
-                                    <span className="progress-label">Marius Petraitis</span>
-                                    <span className="progress-value">2 užsakymai</span>
-                                </div>
-                                <div className="progress-bar-bg">
-                                    <div className="progress-bar green" style={{ width: '50%' }}></div>
-                                </div>
-                            </div>
-
-                            <div className="progress-container">
-                                <div className="progress-header">
-                                    <span className="progress-label">Jonas Kazlauskas</span>
-                                    <span className="progress-value">4 užsakymai</span>
-                                </div>
-                                <div className="progress-bar-bg">
-                                    <div className="progress-bar orange" style={{ width: '90%' }}></div>
-                                </div>
-                            </div>
-
-                            <div className="progress-container">
-                                <div className="progress-header">
-                                    <span className="progress-label">Ieva Petraitė</span>
-                                    <span className="progress-value">1 užsakymas</span>
-                                </div>
-                                <div className="progress-bar-bg">
-                                    <div className="progress-bar green" style={{ width: '25%' }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
+            <div className="action-bar">
+                <div className="search-container">
+                    <input
+                        type="text"
+                        placeholder="Ieškoti gamybos užduočių..."
+                        className="search-input"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Search className="search-icon" />
                 </div>
             </div>
+
+            <Card title="Gamybos tvarkaraštis">
+                <div className="table-container">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Užsakymo ID</th>
+                            <th>Prekė</th>
+                            <th>Klientas</th>
+                            <th>Paskirtas meistras</th>
+                            <th>Pradžios data</th>
+                            <th>Terminas</th>
+                            <th>Liko dienų</th>
+                            <th>Būsena</th>
+                            <th>Veiksmai</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {filteredOrders.map((order) => (
+                            <tr key={order.id}>
+                                <td className="table-text-regular">{order.id}</td>
+                                <td className="table-text-medium">{order.item}</td>
+                                <td className="table-text-regular">{order.customer}</td>
+                                <td className="table-text-regular">
+                                    {order.assignedTo || 'Nepriskirta'}
+                                </td>
+                                <td className="table-text-regular">{order.startDate || '-'}</td>
+                                <td className="table-text-regular">{order.deadline}</td>
+                                <td className="table-text-regular">
+                                    {calculateDaysRemaining(order.deadline)}
+                                </td>
+                                <td>
+                                    <StatusBadge status={order.status} />
+                                </td>
+                                <td>
+                                    <button
+                                        className="btn btn-link"
+                                        onClick={() => handleAssignCraftsman(order)}
+                                    >
+                                        {order.assignedTo ? 'Pakeisti meistrą' : 'Priskirti meistrą'}
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
+
+            {/* Craftsman Assignment Modal */}
+            {showAssignModal && selectedOrder && (
+                <AssignCraftsmanModal
+                    order={selectedOrder}
+                    craftsmen={craftsmen}
+                    onClose={() => setShowAssignModal(false)}
+                    onSubmit={handleAssignSubmit}
+                />
+            )}
         </div>
+    );
+};
+
+// Modal for assigning craftsmen to production jobs
+const AssignCraftsmanModal = ({ order, craftsmen, onClose, onSubmit }) => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const [formData, setFormData] = useState({
+        orderId: order.id,
+        craftsmanName: order.assignedTo || '',
+        startDate: order.startDate || today
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(formData.orderId, formData.craftsmanName, formData.startDate);
+    };
+
+    return (
+        <Modal
+            title={`Priskirti meistrą užsakymui ${order.id}`}
+            onClose={onClose}
+            footer={
+                <>
+                    <button className="btn btn-secondary" onClick={onClose}>Atšaukti</button>
+                    <button className="btn btn-primary" onClick={handleSubmit}>
+                        Priskirti meistrą
+                    </button>
+                </>
+            }
+        >
+            <form>
+                <div className="form-group">
+                    <label className="form-label">Užsakymas</label>
+                    <p><strong>{order.item}</strong> • Klientas: {order.customer}</p>
+                    <p>Terminas: {order.deadline}</p>
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label" htmlFor="craftsmanName">Pasirinkite meistrą</label>
+                    <select
+                        className="form-select"
+                        id="craftsmanName"
+                        name="craftsmanName"
+                        value={formData.craftsmanName}
+                        onChange={handleChange}
+                        required
+                    >
+                        <option value="">Pasirinkite meistrą</option>
+                        {craftsmen.map(craftsman => (
+                            <option key={craftsman.id} value={craftsman.name}>
+                                {craftsman.name} ({craftsman.specialization})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label" htmlFor="startDate">Darbų pradžios data</label>
+                    <input
+                        type="date"
+                        className="form-control"
+                        id="startDate"
+                        name="startDate"
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        min={today}
+                        max={order.deadline}
+                        required
+                    />
+                </div>
+            </form>
+        </Modal>
     );
 };
 
 // Payments Component
 const Payments = () => {
+    // Mock payment data
+    const [payments, setPayments] = useState([
+        { id: 1, date: '2025-03-01', orderId: 'UŽS-002', customer: 'Domas Ignatavičius', method: 'Kreditinė kortelė', amount: 120, status: 'Įvykdytas' },
+        { id: 2, date: '2025-03-02', orderId: 'UŽS-001', customer: 'Domantas Moisejevas', method: 'Banko pervedimas', amount: 225, status: 'Dalinis' },
+        { id: 3, date: '2025-03-03', orderId: 'UŽS-003', customer: 'Matas Kubilius', method: 'PayPal', amount: 850, status: 'Laukiama' },
+        { id: 4, date: '2025-02-28', orderId: 'UŽS-007', customer: 'Edvardas Tamulevičius', method: 'Banko pervedimas', amount: 95, status: 'Laukiama' }
+    ]);
+
+    const [selectedPayment, setSelectedPayment] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Filter payments based on search term
+    const filteredPayments = payments.filter(payment =>
+        payment.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.status.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Handle edit payment status
+    const handleEditPayment = (payment) => {
+        setSelectedPayment(payment);
+        setShowEditModal(true);
+    };
+
+    // Update payment status
+    const handleUpdatePayment = (id, newStatus) => {
+        setPayments(payments.map(payment =>
+            payment.id === id ? { ...payment, status: newStatus } : payment
+        ));
+        setShowEditModal(false);
+    };
+
     return (
         <div>
             <div className="dashboard-grid">
@@ -865,6 +1107,19 @@ const Payments = () => {
                 <StatCard title="Laukiami mokėjimai" value="€1,250" icon={<DollarSign className="stat-card-icon orange" />} change="+2%" positive={false} />
                 <StatCard title="Vėluojantys mokėjimai" value="€450" icon={<DollarSign className="stat-card-icon red" />} change="-10%" positive={true} />
                 <StatCard title="Vidutinis užsakymas" value="€380" icon={<ShoppingBag className="stat-card-icon blue" />} change="+8%" positive={true} />
+            </div>
+
+            <div className="action-bar">
+                <div className="search-container">
+                    <input
+                        type="text"
+                        placeholder="Ieškoti mokėjimų..."
+                        className="search-input"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Search className="search-icon" />
+                </div>
             </div>
 
             <Card title="Mokėjimo operacijos">
@@ -878,78 +1133,240 @@ const Payments = () => {
                             <th>Mokėjimo būdas</th>
                             <th>Suma</th>
                             <th>Būsena</th>
+                            <th>Veiksmai</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr>
-                            <td className="table-text-regular">2025-03-01</td>
-                            <td className="table-text-regular">UŽS-002</td>
-                            <td className="table-text-medium">Domas Ignatavičius</td>
-                            <td className="table-text-regular">Kreditinė kortelė</td>
-                            <td className="table-text-regular">€120</td>
-                            <td>
-                                <PaymentStatusBadge status="Įvykdytas" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="table-text-regular">2025-03-02</td>
-                            <td className="table-text-regular">UŽS-001</td>
-                            <td className="table-text-medium">Domantas Moisejevas</td>
-                            <td className="table-text-regular">Banko pervedimas</td>
-                            <td className="table-text-regular">€225</td>
-                            <td>
-                                <PaymentStatusBadge status="Dalinis" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="table-text-regular">2025-03-03</td>
-                            <td className="table-text-regular">UŽS-003</td>
-                            <td className="table-text-medium">Matas Kubilius</td>
-                            <td className="table-text-regular">PayPal</td>
-                            <td className="table-text-regular">€850</td>
-                            <td>
-                                <PaymentStatusBadge status="Laukiama" />
-                            </td>
-                        </tr>
+                        {filteredPayments.map((payment) => (
+                            <tr key={payment.id}>
+                                <td className="table-text-regular">{payment.date}</td>
+                                <td className="table-text-regular">{payment.orderId}</td>
+                                <td className="table-text-medium">{payment.customer}</td>
+                                <td className="table-text-regular">{payment.method}</td>
+                                <td className="table-text-regular">€{payment.amount}</td>
+                                <td>
+                                    <PaymentStatusBadge status={payment.status} />
+                                </td>
+                                <td>
+                                    <button className="btn btn-link" onClick={() => handleEditPayment(payment)}>
+                                        Keisti būseną
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
                         </tbody>
                     </table>
                 </div>
             </Card>
+
+            {showEditModal && selectedPayment && (
+                <PaymentStatusModal
+                    payment={selectedPayment}
+                    onClose={() => setShowEditModal(false)}
+                    onUpdate={handleUpdatePayment}
+                />
+            )}
         </div>
+    );
+};
+
+// Payment Status Modal Component
+const PaymentStatusModal = ({ payment, onClose, onUpdate }) => {
+    const [status, setStatus] = useState(payment.status);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onUpdate(payment.id, status);
+    };
+
+    return (
+        <Modal
+            title={`Keisti mokėjimo būseną - ${payment.orderId}`}
+            onClose={onClose}
+            footer={
+                <>
+                    <button className="btn btn-secondary" onClick={onClose}>Atšaukti</button>
+                    <button className="btn btn-primary" onClick={handleSubmit}>Atnaujinti</button>
+                </>
+            }
+        >
+            <form>
+                <div className="form-group">
+                    <p><strong>Klientas:</strong> {payment.customer}</p>
+                    <p><strong>Suma:</strong> €{payment.amount}</p>
+                    <p><strong>Mokėjimo būdas:</strong> {payment.method}</p>
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label" htmlFor="status">Mokėjimo būsena</label>
+                    <select
+                        className="form-select"
+                        id="status"
+                        name="status"
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                    >
+                        <option value="Įvykdytas">Įvykdytas</option>
+                        <option value="Laukiama">Laukiama</option>
+                        <option value="Dalinis">Dalinis</option>
+                        <option value="Nepavyko">Nepavyko</option>
+                    </select>
+                </div>
+            </form>
+        </Modal>
     );
 };
 
 // Feedback Component
 const Feedback = () => {
+    // Feedback data
+    const [feedbackItems, setFeedbackItems] = useState([
+        {
+            id: 1,
+            customer: "Domantas Moisejevas",
+            date: "2025-03-01",
+            rating: 5,
+            product: "Auksinis žiedas",
+            comment: "Nepaprastai puikus darbas! Žiedas viršijo mano lūkesčius. Meistro darbas išskirtinis ir dizainas tiksliai toks, kokio norėjau."
+        },
+        {
+            id: 2,
+            customer: "Domas Ignatavičius",
+            date: "2025-02-28",
+            rating: 4,
+            product: "Sidabrinio vėrinio taisymas",
+            comment: "Puikus vėrinio taisymas. Atrodo beveik kaip naujas. Aptarnavimas buvo greitas ir profesionalus."
+        },
+        {
+            id: 3,
+            customer: "Matas Kubilius",
+            date: "2025-02-25",
+            rating: 3,
+            product: "Auksinė apyrankė",
+            comment: "Apyrankė graži, bet užsegimas atrodo šiek tiek laisvas. Klientų aptarnavimas buvo labai malonus ir pasiūlė nemokamai sutaisyti."
+        },
+        {
+            id: 4,
+            customer: "Edvardas Tamulevičius",
+            date: "2025-02-20",
+            rating: 5,
+            product: "Deimantiniai auskarai",
+            comment: "Auskarai puikūs, labai patenkinta žmona. Ačiū už puikų darbą ir konsultacijas."
+        },
+        {
+            id: 5,
+            customer: "Gintarė Kazlauskienė",
+            date: "2025-02-15",
+            rating: 4,
+            product: "Sidabrinis vėrinys",
+            comment: "Labai gražus vėrinys, nešioju kasdien. Malonus aptarnavimas."
+        }
+    ]);
+
+    // Sorting state
+    const [sortBy, setSortBy] = useState('date');
+    const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+
+    // Handle sort change
+    const handleSort = (field) => {
+        if (sortBy === field) {
+            // Toggle sort order if same field
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            // Set new sort field with default descending order
+            setSortBy(field);
+            setSortOrder('desc');
+        }
+    };
+
+    // Sort feedback items
+    const sortedFeedback = [...feedbackItems].sort((a, b) => {
+        let comparison = 0;
+
+        switch (sortBy) {
+            case 'date':
+                comparison = new Date(a.date) - new Date(b.date);
+                break;
+            case 'rating':
+                comparison = a.rating - b.rating;
+                break;
+            case 'customer':
+                comparison = a.customer.localeCompare(b.customer);
+                break;
+            case 'product':
+                comparison = a.product.localeCompare(b.product);
+                break;
+            default:
+                comparison = 0;
+        }
+
+        return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    // Calculate overall stats
+    const averageRating = (feedbackItems.reduce((sum, item) => sum + item.rating, 0) / feedbackItems.length).toFixed(1);
+
+    // Count ratings by star level
+    const ratingCounts = feedbackItems.reduce((counts, item) => {
+        counts[item.rating] = (counts[item.rating] || 0) + 1;
+        return counts;
+    }, {});
+
+    // Calculate percentages for each rating
+    const getRatingPercentage = (rating) => {
+        const count = ratingCounts[rating] || 0;
+        return Math.round((count / feedbackItems.length) * 100);
+    };
+
     return (
         <div>
             <div className="dashboard-grid">
                 <div className="dashboard-grid-col-2">
-                    <Card title="Naujausi atsiliepimai">
+                    <Card title="Atsiliepimai">
+                        <div className="action-bar" style={{ marginTop: 0, marginBottom: '1rem' }}>
+                            <div>
+                                <span style={{ marginRight: '0.5rem' }}>Rikiuoti pagal:</span>
+                                <button
+                                    className={`btn ${sortBy === 'date' ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => handleSort('date')}
+                                    style={{ marginRight: '0.5rem' }}
+                                >
+                                    Data {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                </button>
+                                <button
+                                    className={`btn ${sortBy === 'rating' ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => handleSort('rating')}
+                                    style={{ marginRight: '0.5rem' }}
+                                >
+                                    Įvertinimas {sortBy === 'rating' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                </button>
+                                <button
+                                    className={`btn ${sortBy === 'customer' ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => handleSort('customer')}
+                                    style={{ marginRight: '0.5rem' }}
+                                >
+                                    Klientas {sortBy === 'customer' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                </button>
+                                <button
+                                    className={`btn ${sortBy === 'product' ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => handleSort('product')}
+                                >
+                                    Produktas {sortBy === 'product' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                </button>
+                            </div>
+                        </div>
+
                         <div>
-                            <FeedbackItem
-                                customer="Domantas Moisejevas"
-                                date="2025-03-01"
-                                rating={5}
-                                product="Auksinis žiedas"
-                                comment="Nepaprastai puikus darbas! Žiedas viršijo mano lūkesčius. Meistro darbas išskirtinis ir dizainas tiksliai toks, kokio norėjau."
-                            />
-
-                            <FeedbackItem
-                                customer="Domas Ignatavičius"
-                                date="2025-02-28"
-                                rating={4}
-                                product="Sidabrinio vėrinio taisymas"
-                                comment="Puikus vėrinio taisymas. Atrodo beveik kaip naujas. Aptarnavimas buvo greitas ir profesionalus."
-                            />
-
-                            <FeedbackItem
-                                customer="Matas Kubilius"
-                                date="2025-02-25"
-                                rating={3}
-                                product="Auksinė apyrankė"
-                                comment="Apyrankė graži, bet užsegimas atrodo šiek tiek laisvas. Klientų aptarnavimas buvo labai malonus ir pasiūlė nemokamai sutaisyti."
-                            />
+                            {sortedFeedback.map(item => (
+                                <FeedbackItem
+                                    key={item.id}
+                                    customer={item.customer}
+                                    date={item.date}
+                                    rating={item.rating}
+                                    product={item.product}
+                                    comment={item.comment}
+                                />
+                            ))}
                         </div>
                     </Card>
                 </div>
@@ -957,19 +1374,19 @@ const Feedback = () => {
                 <div>
                     <Card title="Atsiliepimų statistika">
                         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#4f46e5' }}>4.7</div>
+                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#4f46e5' }}>{averageRating}</div>
                             <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>Vidutinis įvertinimas</div>
                             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
-                                <StarRating rating={4.7} />
+                                <StarRating rating={parseFloat(averageRating)} />
                             </div>
                         </div>
 
                         <div>
-                            <RatingBar label="5 Žvaigždutės" percentage={70} />
-                            <RatingBar label="4 Žvaigždutės" percentage={20} />
-                            <RatingBar label="3 Žvaigždutės" percentage={8} />
-                            <RatingBar label="2 Žvaigždutės" percentage={2} />
-                            <RatingBar label="1 Žvaigždutė" percentage={0} />
+                            <RatingBar label="5 Žvaigždutės" percentage={getRatingPercentage(5)} />
+                            <RatingBar label="4 Žvaigždutės" percentage={getRatingPercentage(4)} />
+                            <RatingBar label="3 Žvaigždutės" percentage={getRatingPercentage(3)} />
+                            <RatingBar label="2 Žvaigždutės" percentage={getRatingPercentage(2)} />
+                            <RatingBar label="1 Žvaigždutė" percentage={getRatingPercentage(1)} />
                         </div>
                     </Card>
                 </div>
@@ -1637,24 +2054,26 @@ const CatalogItem = ({ product, onViewImage, onCustomize }) => {
                 <div className="catalog-item-price-row">
                     <p className="catalog-item-price">€{product.basePrice}</p>
                     {product.customizable && (
-                        <span className="catalog-item-customizable">Customizable</span>
+                        <span className="catalog-item-customizable">Pritaikomas</span>
                     )}
                 </div>
                 <div className="catalog-item-actions">
                     <button
                         className="btn btn-primary"
-                        style={{ flex: 1 }}
+                        style={{ flex: product.customizable ? 1 : 2 }}
                         onClick={() => onViewImage(product)}
                     >
-                        View
+                        Peržiūrėti
                     </button>
-                    <button
-                        className="btn btn-secondary"
-                        style={{ flex: 1 }}
-                        onClick={() => onCustomize(product)}
-                    >
-                        Customize
-                    </button>
+                    {product.customizable && (
+                        <button
+                            className="btn btn-secondary"
+                            style={{ flex: 1 }}
+                            onClick={() => onCustomize(product)}
+                        >
+                            Pritaikyti
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
